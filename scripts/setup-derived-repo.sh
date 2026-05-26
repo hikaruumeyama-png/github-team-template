@@ -104,8 +104,21 @@ if [[ -t 0 && $DRY_RUN -eq 0 ]]; then
       [Nn]*) echo "スキップしました。後から手動でインストールできます: https://github.com/cloudnative-co/claude-code-starter-kit" ;;
       *)
         echo "インストール中..."
-        curl -fsSL "https://raw.githubusercontent.com/cloudnative-co/claude-code-starter-kit/main/install.sh" \
-          | bash -s -- --non-interactive --language=ja
+        if curl -fsSL "https://raw.githubusercontent.com/cloudnative-co/claude-code-starter-kit/main/install.sh" \
+            | bash -s -- --non-interactive --language=ja; then
+          echo "インストール完了。"
+        else
+          echo "" >&2
+          echo "[WARN] claude-code-starter-kit のインストールに失敗しました。" >&2
+          echo "       セットアップの残りのステップは続行します。" >&2
+          echo "" >&2
+          echo "       手動インストール方法:" >&2
+          echo "         macOS / Linux / WSL2:" >&2
+          echo "           curl -fsSL https://raw.githubusercontent.com/cloudnative-co/claude-code-starter-kit/main/install.sh | bash" >&2
+          echo "         Windows (Git Bash のみ / PowerShell 不可):" >&2
+          echo "           WSL2 推奨: https://github.com/cloudnative-co/claude-code-starter-kit" >&2
+          echo "" >&2
+        fi
         ;;
     esac
   fi
