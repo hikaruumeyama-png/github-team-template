@@ -1,0 +1,17 @@
+# このファイルの役割: Git で追跡しないファイルを定義する
+.venv/
+.env
+*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+dist/
+build/
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/

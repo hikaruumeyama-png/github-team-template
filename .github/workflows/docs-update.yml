@@ -1,0 +1,39 @@
+name: Docs Auto-Update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 1"  # Mondays at 00:00 UTC
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv sync --group dev
+
+      - name: Run docs update
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: uv run python -m scripts.update_docs
+
+      - name: Create PR if README changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/docs-auto-update
+          delete-branch: true
+          title: "docs: auto-update README Usage section"
+          body: |
+            scripts/update_docs.py による自動生成。
+
+            内容を確認してマージしてください。
+          commit-message: "docs: auto-update README Usage section"
+          labels: documentation,automated

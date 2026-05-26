@@ -1,0 +1,13 @@
+# このファイルは全 PR で必須レビュアーを指定する。
+# 形式: <path> <owner1> <owner2> ...
+# https://docs.github.com/articles/about-codeowners
+#
+# CODEOWNERS は HTML コメントをサポートしないため、TEMPLATE マーカーは使えない。
+# 代わりに @your-org/team-name と @your-org/devops の文字列を
+# プレースホルダ扱いし、Phase 4 の check_template_markers.py で検出する。
+# テンプレ使用時は実チームハンドル(例: @acme/data-platform)に置換すること。
+
+* @your-org/team-name
+
+# CI 設定変更には DevOps 担当のレビューを必須化
+/.github/ @your-org/devops

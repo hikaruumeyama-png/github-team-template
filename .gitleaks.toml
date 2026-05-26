@@ -1,0 +1,9 @@
+# Custom rules / allowlist for gitleaks.
+# Defaults from gitleaks are inherited automatically.
+
+[allowlist]
+description = "Allowlist for known-false-positive patterns"
+paths = [
+  '''docs/superpowers/plans/.*\.md''',
+  '''docs/acceptance\.md''',
+]

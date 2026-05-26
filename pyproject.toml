@@ -1,0 +1,33 @@
+[project]
+name = "team-tool-template"
+version = "0.0.1"
+description = "Team tool template repository"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "pip-audit>=2.7.0",
+    "google-genai>=0.3.0",  # 新しい統合 SDK (旧 google-generativeai とは別物)
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+# 型チェック対象は今ある活動中のソース。メインパッケージが出来たら files に追加すること
+files = ["scripts", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --cov=scripts --cov-report=term-missing"
