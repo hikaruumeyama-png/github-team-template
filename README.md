@@ -37,6 +37,10 @@ cd <リポジトリ名>
 
 ### 3. セットアップスクリプトを実行する
 
+> **Windows ユーザーへ:** 必ず **Windows Terminal で「Git Bash」タブを開いた中** で実行すること(タブバーの「+」右隣の「∨」→ Git Bash を選択)。PowerShell や cmd、エクスプローラのダブルクリックから `./scripts/setup-derived-repo.sh` を起動すると、Windows のファイル関連付け経由で Git Bash が **別ウィンドウとして起動 → スクリプト終了で即閉じる**ため、エラーも進捗も見えなくなる。
+>
+> **対話プロンプトの注意:** 著者名・GitHub ハンドル等を空 Enter してもエラーにはならず、対応する TEMPLATE マーカーが**温存**される(CI の `template-check` Job が後で検出する設計)。後から `uv run python -m scripts.init_project --author "..." --handle "..."` で埋め直すこともできる。
+
 ```bash
 gh auth login --scopes repo   # gh CLI 未認証の場合のみ
 ./scripts/setup-derived-repo.sh
