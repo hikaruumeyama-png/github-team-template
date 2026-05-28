@@ -67,7 +67,7 @@ read -r -d '' PAYLOAD <<'ENDJSON' || true
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["lint", "type-check", "test", "secret-scan", "dep-scan"]
+    "contexts": ["lint", "type-check", "test", "secret-scan", "dep-scan", "shellcheck"]
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {
