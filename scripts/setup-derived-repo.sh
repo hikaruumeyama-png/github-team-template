@@ -3,6 +3,10 @@
 # (GEMINI_API_KEY 登録 + Actions Workflow permissions + ブランチ保護を 1 コマンドで実施)
 set -euo pipefail
 
+# _strip_escapes: remove VT100 cursor-key sequences captured by `read`
+# when bash is launched from PowerShell without a proper PTY.
+_strip_escapes() { printf '%s' "$1" | sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\[[0-9;]*[A-Za-z]//g'; }
+
 DRY_RUN=0
 
 usage() {
@@ -65,6 +69,7 @@ if [[ -z "${GEMINI_API_KEY:-}" ]]; then
   if [[ -t 0 ]]; then
     read -rsp "GEMINI_API_KEY: " GEMINI_API_KEY
     echo
+    GEMINI_API_KEY="$(_strip_escapes "$GEMINI_API_KEY")"
     export GEMINI_API_KEY
   fi
   if [[ -z "${GEMINI_API_KEY:-}" ]]; then
@@ -179,9 +184,6 @@ if [[ -t 0 ]] && grep -q "TEMPLATE:title" README.md 2>/dev/null; then
   echo "────────────────────────────────────────"
   echo "プロジェクト情報を入力してください"
   echo "────────────────────────────────────────"
-  # _strip_escapes: remove VT100 cursor-key sequences captured by `read`
-  # when bash is launched from PowerShell without a proper PTY.
-  _strip_escapes() { printf '%s' "$1" | sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\[[0-9;]*[A-Za-z]//g'; }
 
   read -rp "プロジェクト名: " _PROJ_NAME;      _PROJ_NAME="$(_strip_escapes "$_PROJ_NAME")"
   read -rp "概要（1行）: " _PROJ_OVERVIEW;      _PROJ_OVERVIEW="$(_strip_escapes "$_PROJ_OVERVIEW")"
