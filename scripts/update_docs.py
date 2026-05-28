@@ -40,7 +40,7 @@ from google import genai
 USAGE_START = "<!-- USAGE:START -->"
 USAGE_END = "<!-- USAGE:END -->"
 DEFAULT_MODEL = "gemini-2.5-flash"
-MAX_TOKENS = 1024
+MAX_TOKENS = 4096
 
 _SYSTEM_TEXT = (
     "You are a documentation expert. "
@@ -130,10 +130,17 @@ def _call_api(
         config=genai.types.GenerateContentConfig(
             system_instruction=system,
             max_output_tokens=MAX_TOKENS,
+            # gemini-2.5-flash は thinking モデルで、思考トークンが
+            # max_output_tokens から差し引かれる。doc 生成は全コンテキストを
+            # 渡す決定的タスクなので thinking を無効化し、出力枠を確保する。
+            thinking_config=genai.types.ThinkingConfig(thinking_budget=0),
         ),
     )
 
-    text = response.text
+    try:
+        text = response.text
+    except (ValueError, AttributeError):
+        text = None
     if not text:
         print("Error: Gemini API returned empty content", file=sys.stderr)
         sys.exit(1)
