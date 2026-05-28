@@ -162,6 +162,29 @@ def test_edit_readme_preserves_usage_section(tmp_path: Path) -> None:
     assert "USAGE:START" in text
 
 
+def test_edit_readme_empty_name_preserves_title_marker(tmp_path: Path) -> None:
+    f = _write(tmp_path / "README.md", _README_TEMPLATE)
+    edit_readme(f, "", "概要", "myhandle", "#dev")
+    text = f.read_text(encoding="utf-8")
+    assert "TEMPLATE:title" in text
+    assert "プロジェクト名" in text
+
+
+def test_edit_readme_empty_overview_preserves_overview_marker(tmp_path: Path) -> None:
+    f = _write(tmp_path / "README.md", _README_TEMPLATE)
+    edit_readme(f, "My Tool", "", "myhandle", "#dev")
+    text = f.read_text(encoding="utf-8")
+    assert "TEMPLATE:overview" in text
+
+
+def test_edit_readme_empty_handle_preserves_owners_marker(tmp_path: Path) -> None:
+    f = _write(tmp_path / "README.md", _README_TEMPLATE)
+    edit_readme(f, "My Tool", "概要", "", "")
+    text = f.read_text(encoding="utf-8")
+    assert "TEMPLATE:owners" in text
+    assert "@your-github-handle" in text
+
+
 # ---------------------------------------------------------------------------
 # Unit: edit_license
 # ---------------------------------------------------------------------------
@@ -182,12 +205,35 @@ def test_edit_license(tmp_path: Path) -> None:
     assert "YYYY" not in text
 
 
+def test_edit_license_empty_author_preserves_holder_marker(tmp_path: Path) -> None:
+    f = _write(tmp_path / "LICENSE", _LICENSE_TEMPLATE)
+    edit_license(f, "2026", "")
+    text = f.read_text(encoding="utf-8")
+    assert "2026" in text  # year is always replaced
+    assert "TEMPLATE:license-holder" in text
+
+
 # ---------------------------------------------------------------------------
 # Unit: edit_codeowners
 # ---------------------------------------------------------------------------
 
 _CODEOWNERS_TEMPLATE = """\
 * @your-org/team-name
+/.github/ @your-org/devops
+"""
+
+_CODEOWNERS_TEMPLATE_WITH_EXPLANATION = """\
+# このファイルは全 PR で必須レビュアーを指定する。
+# 形式: <path> <owner1> <owner2> ...
+#
+# CODEOWNERS は HTML コメントをサポートしないため、TEMPLATE マーカーは使えない。
+# 代わりに @your-org/team-name と @your-org/devops の文字列を
+# プレースホルダ扱いし、Phase 4 の check_template_markers.py で検出する。
+# テンプレ使用時は実チームハンドル(例: @acme/data-platform)に置換すること。
+
+* @your-org/team-name
+
+# CI 設定変更には DevOps 担当のレビューを必須化
 /.github/ @your-org/devops
 """
 
@@ -199,6 +245,25 @@ def test_edit_codeowners(tmp_path: Path) -> None:
     assert "@myhandle" in text
     assert "@your-org/team-name" not in text
     assert "@your-org/devops" not in text
+
+
+def test_edit_codeowners_empty_handle_preserves_placeholders(tmp_path: Path) -> None:
+    f = _write(tmp_path / "CODEOWNERS", _CODEOWNERS_TEMPLATE)
+    edit_codeowners(f, "")
+    text = f.read_text(encoding="utf-8")
+    assert "@your-org/team-name" in text
+    assert "@your-org/devops" in text
+
+
+def test_edit_codeowners_strips_template_explanation_comments(tmp_path: Path) -> None:
+    f = _write(tmp_path / "CODEOWNERS", _CODEOWNERS_TEMPLATE_WITH_EXPLANATION)
+    edit_codeowners(f, "myhandle")
+    text = f.read_text(encoding="utf-8")
+    assert "テンプレ使用時は実チームハンドル" not in text
+    assert "CODEOWNERS は HTML コメントをサポートしないため" not in text
+    assert "@myhandle" in text
+    # Functional comment about /.github/ DevOps must remain
+    assert "DevOps 担当のレビュー" in text
 
 
 # ---------------------------------------------------------------------------
@@ -341,6 +406,16 @@ def test_edit_claude_md_preserves_knowledge_section(tmp_path: Path) -> None:
     assert "既存の知見" in text
 
 
+def test_edit_claude_md_empty_handle_preserves_contacts_marker(tmp_path: Path) -> None:
+    f = _write(tmp_path / "CLAUDE.md", _CLAUDE_TEMPLATE)
+    edit_claude_md(f, "", "")
+    text = f.read_text(encoding="utf-8")
+    assert "TEMPLATE:contacts" in text
+    # Other section clearing still happens even when handle is empty
+    assert "TEMPLATE:data" not in text
+    assert "TEMPLATE:gotchas" not in text
+
+
 # ---------------------------------------------------------------------------
 # Integration: main()
 # ---------------------------------------------------------------------------
@@ -376,3 +451,18 @@ def test_main_no_template_markers_remain(project_dir: Path) -> None:
     ]:
         text = path.read_text(encoding="utf-8")
         assert "TEMPLATE:" not in text, f"TEMPLATE marker remains in {path.name}"
+
+
+def test_main_with_all_empty_args_exits_0(project_dir: Path) -> None:
+    """Empty inputs are accepted; remaining markers are surfaced by CI later."""
+    result = main([])
+    assert result == 0
+    # Markers we couldn't fill are preserved so template-check can find them.
+    readme = (project_dir / "README.md").read_text(encoding="utf-8")
+    assert "TEMPLATE:title" in readme
+    assert "TEMPLATE:overview" in readme
+    assert "TEMPLATE:owners" in readme
+    license_text = (project_dir / "LICENSE").read_text(encoding="utf-8")
+    assert "TEMPLATE:license-holder" in license_text
+    codeowners = (project_dir / "CODEOWNERS").read_text(encoding="utf-8")
+    assert "@your-org/team-name" in codeowners
