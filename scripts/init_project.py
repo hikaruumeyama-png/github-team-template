@@ -7,6 +7,11 @@ Usage:
         --author "Author Name" \\
         --handle "github-username" \\
         [--slack "#channel"]
+
+Empty strings for --name / --overview / --author / --handle leave the
+corresponding TEMPLATE markers in place instead of replacing them with the
+empty string. CI's template-check job will then surface what is still
+unfilled so derived-repo owners can come back and finish init later.
 """
 
 from __future__ import annotations
@@ -51,13 +56,16 @@ def _clear_block(text: str, marker: str) -> str:
 
 def edit_readme(path: Path, name: str, overview: str, handle: str, slack: str) -> None:
     text = path.read_text(encoding="utf-8")
-    text = _replace_block(text, "title", name)
-    text = _replace_block(text, "overview", overview)
+    if name:
+        text = _replace_block(text, "title", name)
+    if overview:
+        text = _replace_block(text, "overview", overview)
     text = _strip_markers(text, "setup")
-    owners_lines = [f"- Primary: @{handle}", f"- Backup: @{handle}"]
-    if slack:
-        owners_lines.append(f"- Slack: {slack}")
-    text = _replace_block(text, "owners", "\n".join(owners_lines))
+    if handle:
+        owners_lines = [f"- Primary: @{handle}", f"- Backup: @{handle}"]
+        if slack:
+            owners_lines.append(f"- Slack: {slack}")
+        text = _replace_block(text, "owners", "\n".join(owners_lines))
     # Remove the onboarding "新しいプロジェクトを立ち上げる" section (up to next ## heading)
     text = re.sub(
         r"\n\n## 新しいプロジェクトを立ち上げる\n.*?(?=\n\n## )",
@@ -71,14 +79,27 @@ def edit_readme(path: Path, name: str, overview: str, handle: str, slack: str) -
 def edit_license(path: Path, year: str, author: str) -> None:
     text = path.read_text(encoding="utf-8")
     text = _replace_block(text, "license-year", year)
-    text = _replace_block(text, "license-holder", author)
+    if author:
+        text = _replace_block(text, "license-holder", author)
     path.write_text(text, encoding="utf-8")
+
+
+# Block of template-only explanation comments inside CODEOWNERS. We delete it
+# during init so derived repos don't end up with sentences like
+# "代わりに @ と @ の文字列を …" after placeholder substitution mangles them.
+_CODEOWNERS_EXPLANATION_RE = re.compile(
+    r"#\n# CODEOWNERS は HTML コメントをサポートしないため.*?"
+    r"# テンプレ使用時は実チームハンドル[^\n]*\n",
+    re.DOTALL,
+)
 
 
 def edit_codeowners(path: Path, handle: str) -> None:
     text = path.read_text(encoding="utf-8")
-    text = text.replace("@your-org/team-name", f"@{handle}")
-    text = text.replace("@your-org/devops", f"@{handle}")
+    text = _CODEOWNERS_EXPLANATION_RE.sub("", text)
+    if handle:
+        text = text.replace("@your-org/team-name", f"@{handle}")
+        text = text.replace("@your-org/devops", f"@{handle}")
     path.write_text(text, encoding="utf-8")
 
 
@@ -91,10 +112,11 @@ def edit_architecture(path: Path) -> None:
 
 def edit_claude_md(path: Path, handle: str, slack: str) -> None:
     text = path.read_text(encoding="utf-8")
-    contacts_lines = [f"- Primary: @{handle}"]
-    if slack:
-        contacts_lines.append(f"- Slack: {slack}")
-    text = _replace_block(text, "contacts", "\n".join(contacts_lines))
+    if handle:
+        contacts_lines = [f"- Primary: @{handle}"]
+        if slack:
+            contacts_lines.append(f"- Slack: {slack}")
+        text = _replace_block(text, "contacts", "\n".join(contacts_lines))
     for marker in ("data", "external", "constraints", "deploy", "gotchas"):
         text = _clear_block(text, marker)
     path.write_text(text, encoding="utf-8")
@@ -107,11 +129,11 @@ def edit_claude_md(path: Path, handle: str, slack: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Initialize project from template markers")
-    parser.add_argument("--name", required=True, help="Project name")
-    parser.add_argument("--overview", required=True, help="One-line project overview")
-    parser.add_argument("--author", required=True, help="Author / copyright holder name")
-    parser.add_argument("--handle", required=True, help="GitHub handle (without @)")
-    parser.add_argument("--slack", default="#general", help="Slack channel (default: #general)")
+    parser.add_argument("--name", default="", help="Project name (empty leaves marker)")
+    parser.add_argument("--overview", default="", help="One-line overview (empty leaves marker)")
+    parser.add_argument("--author", default="", help="Copyright holder (empty leaves marker)")
+    parser.add_argument("--handle", default="", help="GitHub handle, no @ (empty leaves marker)")
+    parser.add_argument("--slack", default="", help="Slack channel (optional)")
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
     year = str(datetime.now().year)
