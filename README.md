@@ -18,6 +18,62 @@
 | ブランチ保護 | `main` への直接 push を禁止（GitHub Pro/Team 以上） |
 | CI チェック | TEMPLATE 未記入検出・秘密情報スキャン・脆弱性チェック・シェルスクリプト品質チェック |
 
+### 0. 事前準備（PC に何もない状態から始める場合）
+
+すでにツールが入っている場合はスキップしてよい。
+
+#### 必要なアカウント
+
+| アカウント | 用途 | 取得先 |
+|-----------|------|--------|
+| GitHub アカウント | リポジトリ作成・コード管理 | https://github.com/signup |
+| Gemini API キー | README 自動更新（AI） | https://aistudio.google.com/app/apikey |
+
+#### ツールのインストール（Windows）
+
+PowerShell（管理者権限不要）で順番に実行する:
+
+```powershell
+# 1. Git for Windows（Git Bash が同梱される）
+winget install Git.Git
+
+# 2. GitHub CLI
+winget install GitHub.cli
+
+# 3. uv（Python パッケージマネージャ）
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+> インストール後は **PowerShell を再起動**してから続ける（PATH が更新される）。
+
+#### ツールのインストール（macOS / Linux）
+
+```bash
+# macOS: Homebrew が未導入の場合
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install git gh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Linux（apt 系）
+sudo apt-get update && sudo apt-get install -y git
+sudo apt-get install -y gh   # または https://cli.github.com/ からインストール
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+#### GitHub 認証（初回のみ）
+
+**Windows Terminal の Git Bash タブ**（または macOS/Linux Terminal）で実行する:
+
+```bash
+gh auth login --scopes repo
+```
+
+ブラウザが開くので GitHub アカウントでログインし、表示された認証コードを確認して承認する。
+
+---
+
+準備が整ったら **手順 1** に進む。
+
 ### 1. リポジトリを作成する
 
 GitHub の **"Use this template"** → **"Create a new repository"** からリポジトリを作成する。
